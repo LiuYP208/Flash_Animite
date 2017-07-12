@@ -235,13 +235,14 @@
         LAYER_MAX = m_FlashList.length;
         console.log(m_FlashList);
     }
+
     //开始动画
     function BeginAnimite() {
 
         SetAnimite();
 
 
-        AddTile(m_CloudList[SHOW_NUM], "Cloud_" + SHOW_NUM);
+        // AddTile(m_CloudList[SHOW_NUM], "Cloud_" + SHOW_NUM);
         AddKML(m_FlashList[SHOW_NUM], SHOW_NUM);
         SHOW_NUM++;
         anime_timer = setInterval(function () {
@@ -250,12 +251,10 @@
             //判断添加值域
             if (ADD_NUM < LAYER_MAX) {
                 //设置当前图层状态为显示模式
-                AddTile(m_CloudList[ADD_NUM], "Cloud_" + ADD_NUM);
+                //AddTile(m_CloudList[ADD_NUM], "Cloud_" + ADD_NUM);
                 AddKML(m_FlashList[ADD_NUM], ADD_NUM);
                 //  var m_CloudID = ADD_NUM / 15;
                 console.log("ADD_NUMTile:" + m_CloudList[ADD_NUM]);
-
-
                 ADD_NUM++;
             }
             //若下一个图层加载成功，则进行添加和移除
@@ -297,6 +296,11 @@
         for (var m_AreadyLayer in   m_ShowLayer) {
             //console.log(m_AreadyLayer);
             Remove_Layer(m_AreadyLayer);
+        }
+
+        for (var m_TileNum = m_CloudList.length - 1; m_TileNum > 0; m_TileNum--) {
+            //var m_Tile = m_CloudList[m_TileNum];
+            AddTile(m_CloudList[m_TileNum], "Cloud_" + m_TileNum);
         }
 
         REMOVE_NUM = -1;
@@ -369,7 +373,7 @@
          m_sacle = 0.5;
          }*/
         var m_size = 16;
-        var m_Src = 'fr/flash_1.png';
+        var m_Src = 'icon/flash_16.png';
         if (m_sacle < 1) {
             m_Src = 'icon/flash_16.png';
             m_size = 16;
