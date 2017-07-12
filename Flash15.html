@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>闪电_15min</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.2.0/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.2.0/build/ol.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            background-color: #060133;
+        }
+
+        #testColor {
+            background-color: rgb(255, 191, 124);
+        }
+
+        #testColorfill {
+            background-color: rgb(255, 191, 124);
+        }
+
+        #testColorfillBegin {
+            background-color: rgb(255, 191, 124);
+        }
+
+        #testColorfillEnd {
+            background-color: rgb(254, 247, 205);
+        }
+
+        #map {
+            position: relative;
+        }
+
+        #info {
+            position: absolute;
+            height: 1px;
+            width: 1px;
+            z-index: 100;
+        }
+
+        .tooltip.in {
+            opacity: 1;
+        }
+
+        .tooltip.top .tooltip-arrow {
+            border-top-color: #fdf5c1;
+        }
+
+        .tooltip-inner {
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body>
+<div id="map" class="map">
+    <div id="info"></div>
+</div>
+<div>
+    <button onclick="AddLayerTest()">添加闪电</button>
+    <button onclick="RemoveTest()">移除闪电</button>
+
+    <button onclick="AddTileTest()">添加云图</button>
+    <button onclick="RemoveTileTest()">移除云图</button>
+
+    <button onclick="SetAnimite()">移除</button>
+    <button onclick="BeginAnimite()">开始15min 模式</button>
+    　
+    <input type="number" id="InputMax" name="points"/>
+</div>
+<script>
+
+
+    var styleCache = {};
+    var m_Resulation = [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/];
+
+    for (var i = 0; i < 8; i++) {
+        console.log(m_Resulation[i]);
+        styleCache[m_Resulation[i]] = {};
+    }
+
+    //闪电列表
+    var m_FlashList = [];
+
+
+    //云图列表
+    var m_CloudList = ["fr/mips/20170707_0900/",
+        "fr/mips/20170707_0915/",
+        "fr/mips/20170707_0930/",
+        'fr/mips/20170707_0945/',
+        'fr/mips/20170707_1015/',
+        'fr/mips/20170707_1030/',
+        'fr/mips/20170707_1045/',
+        'fr/mips/20170707_1100/',
+        'fr/mips/20170707_1115/',
+        'fr/mips/20170707_1130/',
+        'fr/mips/20170707_1145/'];
+    var map;
+    var anime_timer;
+
+    var ANIMATETIMESPAM = 100;
+
+    //当前移动
+    var REMOVE_NUM = -1;
+    //当前显示
+    var SHOW_NUM = 0;
+    //当前添加
+    var ADD_NUM = 1;
+    //图层最大值
+
+    var LAYER_MAX = 15;
+    //当前显示 Layer
+    var m_ShowLayer = {};
+
+    var m_resulation = [];
+    // var info = $('#info');
+    //初始化 地图显示
+    function InitMap() {
+
+
+        var style = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#319FD3',
+                width: 1
+            })
+        });
+
+        var vector = new ol.layer.Vector({
+            source: new ol.source.Vector({
+                url: 'https://openlayers.org/en/v4.2.0/examples/data/topojson/world-110m.json',
+                format: new ol.format.TopoJSON({
+                    // don't want to render the full world polygon (stored as 'land' layer),
+                    // which repeats all countries
+                    layers: ['countries']
+                }),
+                overlaps: false,
+                zIndex: 3000
+            }),
+            style: style
+        });
+        vector.setZIndex(5000);
+        // m_ShowLayer["vector"] = vector;
+        map = new ol.Map({
+            layers: [vector],
+            target: 'map',
+            view: new ol.View({
+                projection: 'EPSG:4326',
+                center: [105, 34],
+                resolutions: m_Resulation,
+                //    [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125], //设置分辨率
+                extent: [-180, -90, 180, 90],
+                zoom: 5
+            })
+        });
+        // AddLayerTest();
+
+
+    }
+
+    function InitDataList_1min() {
+        console.log("InitDataList_1min");
+        var m_BEGIN = 201707070850;
+
+        for (var i = 0; i < 15; i++) {
+
+
+            var m_kmlStr = 'fr/data/' + (m_BEGIN + i) + '.kml';
+
+
+            //console.log(m_kmlStr);
+            m_FlashList.push(m_kmlStr);
+            // m_kmlStr += i + '_';
+        }
+        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
+
+        LAYER_MAX = m_FlashList.length;
+        console.log(m_FlashList);
+    }
+    //初始化数据列表
+    function InitDataList() {
+        console.log("InitDataList");
+
+        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6';
+        for (var i = 0; i < 15; i++) {
+            ///console.log('iiii');
+//            tmpList.push(i);
+//            var m_kmlStr;
+//            if (i < 10) {
+//                m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/0' + i + '.kml';
+//                m_kmlStr=i;
+//            }
+//            else {
+//                m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/' + i + '.kml';
+//
+//            }
+//            m_FlashList.push(m_kmlStr);
+            var m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
+            for (var t = 0; t < 15; t++) {
+                /// console.log('ttttt');
+                if (t < 14) {
+                    var w = 15 * i + 11 + t;
+                    ///   console.log(w);
+                    m_kmlStr = m_kmlStr + w + "_";
+                } else {
+                    var w1 = 15 * i + 11 + t;
+                    m_kmlStr = m_kmlStr + w1;
+                }
+
+            }
+            console.log(m_kmlStr);
+            m_FlashList.push(m_kmlStr);
+            // m_kmlStr += i + '_';
+        }
+        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
+
+        LAYER_MAX = m_FlashList.length;
+        console.log(m_FlashList);
+    }
+
+
+    function InitDataList1() {
+        console.log("InitDataList");
+        for (var i = 1; i < 8; i++) {
+
+            m_kmlStr = 'fr/flash/15min/flash_' + i + '.kml';
+            console.log(m_kmlStr);
+            m_FlashList.push(m_kmlStr);
+            // m_kmlStr += i + '_';
+        }
+        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
+
+        LAYER_MAX = m_FlashList.length;
+        console.log(m_FlashList);
+    }
+    //开始动画
+    function BeginAnimite() {
+
+        SetAnimite();
+
+
+        AddTile(m_CloudList[SHOW_NUM], "Cloud_" + SHOW_NUM);
+        AddKML(m_FlashList[SHOW_NUM], SHOW_NUM);
+        SHOW_NUM++;
+        anime_timer = setInterval(function () {
+            console.log("move on!");
+
+            //判断添加值域
+            if (ADD_NUM < LAYER_MAX) {
+                //设置当前图层状态为显示模式
+                AddTile(m_CloudList[ADD_NUM], "Cloud_" + ADD_NUM);
+                AddKML(m_FlashList[ADD_NUM], ADD_NUM);
+                //  var m_CloudID = ADD_NUM / 15;
+                console.log("ADD_NUMTile:" + m_CloudList[ADD_NUM]);
+
+
+                ADD_NUM++;
+            }
+            //若下一个图层加载成功，则进行添加和移除
+
+
+            //判断移除值域
+            if (REMOVE_NUM < LAYER_MAX && REMOVE_NUM != -1) {
+                // 移除上一层
+                console.log("REMOVE_NUM:" + REMOVE_NUM);
+                //  var m_CloudID = REMOVE_NUM / 15;
+                Remove_Layer(REMOVE_NUM);
+                Remove_Layer("Cloud" + REMOVE_NUM);
+
+                REMOVE_NUM++;
+            }
+            else if (REMOVE_NUM = -1) {
+                REMOVE_NUM++
+            }
+
+            if (SHOW_NUM < LAYER_MAX) {
+                SHOW_NUM++;
+            }
+            else {
+                //  alert("全部完成！");
+                StopAnimite();
+            }
+        }, ANIMATETIMESPAM);
+    }
+
+
+    //停止动画
+    function StopAnimite() {
+        clearInterval(anime_timer);
+    }
+
+    //清除所有当前图层 变量复位
+    function SetAnimite() {
+        //console.log(m_ShowLayer);
+        for (var m_AreadyLayer in   m_ShowLayer) {
+            //console.log(m_AreadyLayer);
+            Remove_Layer(m_AreadyLayer);
+        }
+
+        REMOVE_NUM = -1;
+        //当前显示
+        SHOW_NUM = 0;
+        //当前添加
+        ADD_NUM = 1;
+    }
+
+
+    //添加KML
+    function AddKML(oURL, nameFun) {
+        console.log("AddKML:" + oURL);
+
+        var layer = InitKML(oURL);
+        if (!m_ShowLayer[nameFun]) {
+            m_ShowLayer[nameFun] = layer;
+            var m_LayerADD = map.addLayer(layer);
+            return m_LayerADD;
+        }
+    }
+
+    function InitKML(oURL) {
+        var layer = new ol.layer.Vector({
+            source: new ol.source.Vector({
+                url: oURL,      //https://openlayers.org/en/v3.20.1/examples/data/kml/2012_Earthquakes_Mag5.kml
+                projection: 'EPSG:4326',
+                format: new ol.format.KML({
+                    extractStyles: false
+                }),
+                resolution: m_Resulation
+            }),
+            style: styleFunction
+        });
+        //  layer.setVisible(false);
+        return layer;
+    }
+    var styleFunction = function (feature, resolution) {
+        var style;
+        // console.log("resolution:" + resolution);
+        var BaseResolution = 0.0219726562;
+        var m_sacle = 1;
+        m_sacle = BaseResolution / resolution;
+        if (resolution == m_Resulation[7] || resolution == m_Resulation[8]) {
+            m_sacle = m_sacle * 0.6;
+            //   console.log(m_sacle);
+        }
+
+        var name = feature.get('name');
+        var magnitude = parseFloat(name);
+        //console.log(magnitude);
+        // name.substr(6);
+        //var magnitude = parseFloat(feature.get('magnitude'));
+        //var radius = 5 + 20 * (magnitude - 5);
+        var m_opacity = 0;
+        if (magnitude < 1) {
+            m_opacity = (magnitude + 50) / 500;
+        }
+        else if (magnitude < 200) {
+            m_opacity = (magnitude + 150) / 500;
+        }
+        else {
+            m_opacity = (magnitude + 300) / 500;
+        }
+        if (m_opacity > 1) {
+            m_opacity = 1;
+        }
+        m_opacity = 1;
+        /*  if (m_sacle < 0.5) {
+         m_sacle = 0.5;
+         }*/
+        var m_size = 16;
+        var m_Src = 'fr/flash_1.png';
+        if (m_sacle < 1) {
+            m_Src = 'icon/flash_16.png';
+            m_size = 16;
+        }
+        else {
+            m_sacle = m_sacle / 2;
+            m_Src = 'icon/flash_32.png';
+            m_size = 32;
+        }
+
+        // console.log(m_Size + ":" + m_opacity);
+        style = new ol.style.Style({
+            image: new ol.style.Icon(({
+                src: m_Src,
+                size: [m_size, m_size],
+                scale: m_sacle,
+                opacity: m_opacity
+            }))
+        });
+        return style;
+    };
+
+
+    //添加Tile 格式的云图
+    function AddTile(oURL, nameFun) {
+        // console.log(oURL);
+
+        layer = InitTile(oURL, nameFun);
+        if (!m_ShowLayer[nameFun]) {
+            m_ShowLayer[nameFun] = layer;
+            var m_LayerADD = map.addLayer(layer);
+            return m_LayerADD;
+        }
+    }
+
+    function InitTile(oURL, nameFun) {
+        var urlTemplate = oURL + "{z}/{x}/{y}.jpg";
+        var layer = new ol.layer.Tile({
+            source: new ol.source.TileImage({
+                projection: 'EPSG:4326',
+                tileGrid: new ol.tilegrid.TileGrid({
+                    origin: ol.extent.getBottomLeft(new ol.proj.get("EPSG:4326").getExtent()),    // 设置原点坐标
+                    resolutions: [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/], //设置分辨率
+                    /*extent: [-180, -90, 180, 90],*/
+                    tileSize: [256, 256]
+                }),
+                wrapX: false,
+                tileUrlFunction: function (tileCoord, pixelRatio, projection) {
+                    var z = tileCoord[0];
+                    var x = tileCoord[1];
+                    /*var y = Math.pow(2, z) + tileCoord[2];*/
+                    var y = tileCoord[2];
+                    // wrap the world on the X axis
+                    var n = Math.pow(2, z + 1); // 2 tiles at z=0
+                    x = x % n;
+                    if (x * n < 0) {
+                        // x and n differ in sign so add n to wrap the result
+                        // to the correct sign
+                        x = x + n;
+                    }
+                    return urlTemplate.replace('{z}', z.toString())
+                            .replace('{y}', y.toString())
+                            .replace('{x}', x.toString());
+                }
+            })
+        });
+        return layer
+    }
+
+    function Remove_Layer(nameFun) {
+        if (m_ShowLayer[nameFun]) {
+            var m_Layer = m_ShowLayer[nameFun];
+            map.removeLayer(m_Layer);
+            delete m_ShowLayer[nameFun];
+        }
+    }
+</script>
+<script>
+
+    /*    按钮部分*/
+    function AddLayerTest() {
+        //AddKML('fr/data/1min/201707070850.kml', 0);
+        // http://123.56.135.196:6001/api/test/flash/fr/lmi.kml
+        // AddKML('fr/flash/15min/flash_1.kml', 0);
+        //   AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1', 0);
+        AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6_7_8_9_10_11_12_13_14_15', 0)
+    }
+
+    function AddLayerTest1() {
+        //AddKML('fr/data/1min/201707070850.kml', 0);
+        // http://123.56.135.196:6001/api/test/flash/fr/lmi.kml
+        AddKML('fr/flash/15min/flash_2.kml', 1);
+        //AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6_7_8_9_10', 0);
+    }
+
+    function AddLayerTest2() {
+        //AddKML('fr/data/1min/201707070850.kml', 0);
+        // http://123.56.135.196:6001/api/test/flash/fr/lmi.kml
+        AddKML('fr/flash/15min/flash_3.kml', 2);
+        //AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6_7_8_9_10', 0);
+    }
+    function RemoveTest() {
+        Remove_Layer(0);
+    }
+
+    function AddTileTest() {
+        AddTile(m_CloudList[0], 'Clould_11');
+        // m_ShowLayer["vector"].setZIndex(3000);
+    }
+
+    function RemoveTileTest() {
+        Remove_Layer('Clould_11');
+    }
+
+</script>
+<script>
+
+    /*初始化部分*/
+
+    InitMap();
+    InitDataList1();
+
+</script>
+
+
+</body>
+</html>
