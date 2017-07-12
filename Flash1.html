@@ -2,11 +2,11 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>闪电_1min</title>
-    <link rel="stylesheet" href="https://openlayers.org/en/v4.2.0/css/ol.css" type="text/css">
+    <title>闪电_15min</title>
+    <link rel="stylesheet" href="./lib/openlayer/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
-    <script src="https://openlayers.org/en/v4.2.0/build/ol.js"></script>
+    <script src="./lib/openlayer/ol.js"></script>
     <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
@@ -60,24 +60,19 @@
     <div id="info"></div>
 </div>
 <div>
-    <button onclick="AddLayerTest()">测试添加KML图层</button>
-    <button onclick="RemoveTest()">测试移除KML图层</button>
+    <button onclick="BeforeTime()">上一个</button>
+    <button onclick="NextTime()">下一个</button>
 
-    <button onclick="AddTileTest()">测试添加Tile图层</button>
-    <button onclick="RemoveTileTest()">测试移除Tile图层</button>
+    <button onclick="BeginAnimite()">开始15min 模式</button>
+    <button onclick="StopAnimite()">暂停</button>
+    <button onclick="SetAnimite()">复位</button>
 
-
-    <button onclick="SetAnimite()">移除全部图层</button>
-    <button onclick="BeginAnimite()">开始动画</button>
-    <input type="number" id="InputMax" name="points"/>
 </div>
 <script>
+
+
     var styleCache = {};
-    // [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/], //设置分辨率
-    var m_Resulation = [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/] //设置分辨率
-            ;
-    //  var m_Resulation = [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562,
-    //    0.010986328125, 0.0054931640625, 0.00274658203125]; //设置分辨率
+    var m_Resulation = [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125, 0.00244140625];
 
     for (var i = 0; i < 8; i++) {
         console.log(m_Resulation[i]);
@@ -89,21 +84,19 @@
 
 
     //云图列表
-    var m_CloudList = ["fr/mips/20170707_0900/",
+    var m_CloudList = [
+        "fr/mips/20170707_0900/",
         "fr/mips/20170707_0915/",
         "fr/mips/20170707_0930/",
         'fr/mips/20170707_0945/',
         'fr/mips/20170707_1015/',
         'fr/mips/20170707_1030/',
-        'fr/mips/20170707_1045/',
-        'fr/mips/20170707_1100/',
-        'fr/mips/20170707_1115/',
-        'fr/mips/20170707_1130/',
-        'fr/mips/20170707_1145/'];
+        'fr/mips/20170707_1045/'
+    ];
     var map;
     var anime_timer;
 
-    var ANIMATETIMESPAM = 300;
+    var ANIMATETIMESPAM = 20;
 
     //当前移动
     var REMOVE_NUM = -1;
@@ -118,6 +111,8 @@
     var m_ShowLayer = {};
 
     var m_resulation = [];
+
+    var M_TileMax = 5000000;
     // var info = $('#info');
     //初始化 地图显示
     function InitMap() {
@@ -132,7 +127,7 @@
 
         var vector = new ol.layer.Vector({
             source: new ol.source.Vector({
-                url: 'https://openlayers.org/en/v4.2.0/examples/data/topojson/world-110m.json',
+                url: './data/world-110m.json',
                 format: new ol.format.TopoJSON({
                     // don't want to render the full world polygon (stored as 'land' layer),
                     // which repeats all countries
@@ -154,12 +149,16 @@
                 resolutions: m_Resulation,
                 //    [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125], //设置分辨率
                 extent: [-180, -90, 180, 90],
-                zoom: 5
+                zoom: 4
             })
         });
-        // AddLayerTest();
-
-
+        var view = map.getView();
+        view.on('change:center', function (e) {
+            clearAnimate();
+        });
+        view.on('change:resolution', function (e) {
+            clearAnimate();
+        });
     }
 
     function InitDataList_1min() {
@@ -172,7 +171,7 @@
             var m_kmlStr = 'fr/data/' + (m_BEGIN + i) + '.kml';
 
 
-            console.log(m_kmlStr);
+            //console.log(m_kmlStr);
             m_FlashList.push(m_kmlStr);
             // m_kmlStr += i + '_';
         }
@@ -187,18 +186,7 @@
 
         // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6';
         for (var i = 0; i < 15; i++) {
-            ///console.log('iiii');
-//            tmpList.push(i);
-//            var m_kmlStr;
-//            if (i < 10) {
-//                m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/0' + i + '.kml';
-//                m_kmlStr=i;
-//            }
-//            else {
-//                m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/' + i + '.kml';
-//
-//            }
-//            m_FlashList.push(m_kmlStr);
+
             var m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
             for (var t = 0; t < 15; t++) {
                 /// console.log('ttttt');
@@ -225,9 +213,9 @@
 
     function InitDataList1() {
         console.log("InitDataList");
-        for (var i = 1; i < 8; i++) {
-
-            m_kmlStr = 'fr/flash/15min/flash_' + i + '.kml';
+        var m_Time = 201707070850;
+        for (var i = 1; i < 15; i++) {
+            m_kmlStr = 'fr/flash/1min/' + m_Time + i + '.kml';
             console.log(m_kmlStr);
             m_FlashList.push(m_kmlStr);
             // m_kmlStr += i + '_';
@@ -237,52 +225,51 @@
         LAYER_MAX = m_FlashList.length;
         console.log(m_FlashList);
     }
+
+    var resatFlag = true;
+
     //开始动画
     function BeginAnimite() {
+        if (resatFlag) {
+            SetAnimite();
+        }
+        resatFlag = true;
 
-        SetAnimite();
-
-
-        AddTile(m_CloudList[SHOW_NUM], "Cloud_" + SHOW_NUM);
-        AddKML(m_FlashList[SHOW_NUM], SHOW_NUM);
-        SHOW_NUM++;
+        AddTile(m_CloudList[0], "Cloud_" + 0);
+        //AddKML(m_FlashList[SHOW_NUM], SHOW_NUM);
+        //SHOW_NUM++;
         anime_timer = setInterval(function () {
-            console.log("move on!");
+            if (oGetStatus()) {
 
-            //判断添加值域
-            if (ADD_NUM < LAYER_MAX) {
-                //设置当前图层状态为显示模式
-                AddTile(m_CloudList[ADD_NUM], "Cloud_" + ADD_NUM);
+                //判断添加值域
+                var BaseTileNum = GetTilezIndex("Cloud" + SHOW_NUM);
+                // console.log();
+                //添加下一层的
+                if (ADD_NUM % 15 == 0) {
+                    AddTile(m_CloudList[ADD_NUM], "Cloud" + ADD_NUM);
+                    SetTilezIndex("Cloud" + ADD_NUM, BaseTileNum + 1);
+                }
                 AddKML(m_FlashList[ADD_NUM], ADD_NUM);
-                //  var m_CloudID = ADD_NUM / 15;
-                console.log("ADD_NUMTile:" + m_CloudList[ADD_NUM]);
-
-
+                SetTilezIndex(ADD_NUM, BaseTileNum + 2);
                 ADD_NUM++;
-            }
-            //若下一个图层加载成功，则进行添加和移除
+                ADD_NUM = ADD_NUM % m_FlashList.length;
 
-
-            //判断移除值域
-            if (REMOVE_NUM < LAYER_MAX && REMOVE_NUM != -1) {
-                // 移除上一层
-                console.log("REMOVE_NUM:" + REMOVE_NUM);
-                //  var m_CloudID = REMOVE_NUM / 15;
-                Remove_Layer(REMOVE_NUM);
-                Remove_Layer("Cloud" + REMOVE_NUM);
-
-                REMOVE_NUM++;
-            }
-            else if (REMOVE_NUM = -1) {
-                REMOVE_NUM++
-            }
-
-            if (SHOW_NUM < LAYER_MAX) {
                 SHOW_NUM++;
-            }
-            else {
-                //  alert("全部完成！");
-                StopAnimite();
+                SHOW_NUM = SHOW_NUM % m_FlashList.length;
+
+                //判断移除值域
+                if (REMOVE_NUM != -1) {
+                    // 隐藏tile上一云图
+                    if (ADD_NUM % 15 == 0) {
+                        Remove_Layer("Cloud" + REMOVE_NUM);
+                    }
+                    //移除kml
+                    Remove_Layer(REMOVE_NUM);
+                }
+                REMOVE_NUM++;
+                REMOVE_NUM = REMOVE_NUM % m_FlashList.length;
+            } else {
+
             }
         }, ANIMATETIMESPAM);
     }
@@ -295,24 +282,28 @@
 
     //清除所有当前图层 变量复位
     function SetAnimite() {
-        //console.log(m_ShowLayer);
-        for (var m_AreadyLayer in   m_ShowLayer) {
-            console.log(m_AreadyLayer);
+        clearAnimate();
+        for (var m_AreadyLayer in m_ShowLayer) {
             Remove_Layer(m_AreadyLayer);
         }
+        /*       for (var m_TileNum = m_CloudList.length - 1; m_TileNum > 0; m_TileNum--) {
+         //var m_Tile = m_CloudList[m_TileNum];
+         AddTile(m_CloudList[m_TileNum], "Cloud" + m_TileNum);
+         SetTileVisibility("Cloud" + m_TileNum, false);
+         }*/
+
 
         REMOVE_NUM = -1;
         //当前显示
         SHOW_NUM = 0;
         //当前添加
         ADD_NUM = 1;
+        resatFlag = false;
     }
 
 
     //添加KML
     function AddKML(oURL, nameFun) {
-        console.log("AddKML:" + oURL);
-
         var layer = InitKML(oURL);
         if (!m_ShowLayer[nameFun]) {
             m_ShowLayer[nameFun] = layer;
@@ -331,142 +322,67 @@
                 }),
                 resolution: m_Resulation
             }),
-            style: styleFunction1
+            style: styleFunction
         });
         //  layer.setVisible(false);
         return layer;
     }
-
     var styleFunction = function (feature, resolution) {
-
-        //console.log(resolution);
-        //console.log();
-
-        // console.log("resolution:" + resolution);
-        // 2012_Earthquakes_Mag5.kml stores the magnitude of each earthquake in a
-        // standards-violating <magnitude> tag in each Placemark.  We extract it from
-        // the Placemark's name instead.
-        //console.log(feature);
-        var m_Radis = 1;
+        var style;
+        var BaseResolution = 0.0219726562;
+        var m_sacle = 1;
+        m_sacle = BaseResolution / resolution;
+        if (resolution == m_Resulation[7] || resolution == m_Resulation[8]) {
+            m_sacle = m_sacle * 0.6;
+        }
         var name = feature.get('name');
-        var magnitude = parseFloat(name.substr(6));
-        //console.log(magnitude);
-        // name.substr(6);
-        //var magnitude = parseFloat(feature.get('magnitude'));
-        //var radius = 5 + 20 * (magnitude - 5);
-        var opatiry = magnitude / 1300;
-
-        var m_opatiry;
-        var m_stroke_Radis = 0;
-        if (magnitude < 10) {
-            // opatiry = 0.0;
-            m_opatiry = 0.0;
-            m_stroke_Radis = 0;
+        var magnitude = parseFloat(name);
+        var m_opacity = 0;
+        if (magnitude < 1) {
+            m_opacity = (magnitude + 1) / 500;
         }
-        else if (magnitude < 99) {
-            //  opatiry = 0.0;
-            m_opatiry = 0.0;
-            m_stroke_Radis = 0;
-        }
-        else if (magnitude < 300) {
-            // opatiry = 0.0;
-            m_opatiry = 0.0;
-            m_stroke_Radis = 0;
+        else if (magnitude < 200) {
+            m_opacity = (magnitude + 100) / 500;
         }
         else {
-            opatiry = 1;
-            m_Radis = 1.5;
-            m_opatiry = 0.4;
-            m_stroke_Radis = 4;
+            m_opacity = (magnitude + 300) / 500;
         }
-        m_Radis = m_Radis * 1;
-        m_stroke_Radis = m_stroke_Radis * 0.9;
-        // var BaseResulaion = 0.0439453125;
-
-        m_stroke_Radis = m_stroke_Radis * 0.0439453125 / resolution;
-        m_Radis = m_Radis * 0.0439453125 / resolution;
-        /*
-         if (opatiry == 0.25) {
-         m_opatiry = 0.0;
-         }
-         else {
-         m_opatiry = 0.2;
-         }
-         //m_opatiry = 0.3;*/
-        var m_styleCache = styleCache[resolution];
-
-        var style = m_styleCache[opatiry];
-        //  console.log(opatiry);
-        // rgb(255, 191, 124);
-        if (!style) {
-            //console.log(opatiry);
-            // console.log('rgba(255, 153, 0, ' + opatiry + ')');
-            style = new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: m_Radis,
-                    fill: new ol.style.Fill({
-                        //            background-color: rgb(255, 191, 124);
-                        color: 'rgba(204,153,10,' + opatiry + ')'
-                    }),
-                    stroke: new ol.style.Stroke({
-                        color: 'rgba(255,191,124, ' + m_opatiry + ')',
-                        width: m_stroke_Radis
-                    })
-                })
-            });
-            styleCache[resolution][opatiry] = style;
+        if (m_opacity > 1) {
+            m_opacity = 1;
         }
+        if (m_opacity < 0.05) {
+            m_opacity = 0.05;
+        }
+
+        if (m_sacle < 0.1) {
+            m_sacle = 0.1;
+        }
+        var m_size = 16;
+        var m_Src = 'icon/flash_16.png';
+        if (m_sacle < 1) {
+            m_Src = 'icon/flash_16.png';
+            m_size = 16;
+        }
+        else {
+            m_sacle = m_sacle / 2;
+            m_Src = 'icon/flash_32.png';
+            m_size = 32;
+        }
+        style = new ol.style.Style({
+            image: new ol.style.Icon(({
+                src: m_Src,
+                size: [m_size, m_size],
+                scale: m_sacle,
+                opacity: m_opacity
+            }))
+        });
         return style;
     };
-
-    var styleFunction1 = function (feature, resolution) {
-                var style;
-                // console.log("resolution:" + resolution);
-                var BaseResolution = 0.0219726562;
-                var m_Size = BaseResolution / resolution;
-
-                var name = feature.get('name');
-                var magnitude = parseFloat(name);
-                //console.log(magnitude);
-                // name.substr(6);
-                //var magnitude = parseFloat(feature.get('magnitude'));
-                //var radius = 5 + 20 * (magnitude - 5);
-                var m_opacity = 0;
-                if (magnitude < 1) {
-                    m_opacity = 0.0;
-                }
-                else if (magnitude < 200) {
-                    m_opacity = (magnitude + 50) / 500;
-                }
-                else {
-                    m_opacity = (magnitude + 300) / 500;
-                }
-                if (m_opacity > 1) {
-                    m_opacity = 1;
-                }
-                if (m_Size < 0.5) {
-                    m_Size = 0.5;
-                }
-
-                // console.log(m_Size + ":" + m_opacity);
-                style = new ol.style.Style({
-                    image: new ol.style.Icon(({
-                        src: 'fr/flash_1.png',
-                        size: [17, 17],
-                        scale: m_Size,
-                        opacity: m_opacity
-                    }))
-                });
-                return style;
-            }
-            ;
 
 
     //添加Tile 格式的云图
     function AddTile(oURL, nameFun) {
-        // console.log(oURL);
-
-        layer = InitTile(oURL, nameFun);
+        var layer = InitTile(oURL);
         if (!m_ShowLayer[nameFun]) {
             m_ShowLayer[nameFun] = layer;
             var m_LayerADD = map.addLayer(layer);
@@ -474,14 +390,36 @@
         }
     }
 
-    function InitTile(oURL, nameFun) {
+    function clearAnimate() {
+        tileAllNum = 0;
+        tileLoadEnd = 0;
+        tileLoadError = 0;
+    }
+    var tileAllNum = 0;
+    var tileLoadEnd = 0;
+    var tileLoadError = 0;
+
+    function oGetStatus() {
+        if (tileAllNum <= tileLoadEnd + tileLoadError) {
+            tileLoadError = 0;
+            tileLoadEnd = 0;
+            tileAllNum = 0;
+            return true;
+        } else {
+
+            return false;
+        }
+    }
+    //初始化TILE
+    function InitTile(oURL) {
         var urlTemplate = oURL + "{z}/{x}/{y}.jpg";
         var layer = new ol.layer.Tile({
             source: new ol.source.TileImage({
                 projection: 'EPSG:4326',
                 tileGrid: new ol.tilegrid.TileGrid({
                     origin: ol.extent.getBottomLeft(new ol.proj.get("EPSG:4326").getExtent()),    // 设置原点坐标
-                    resolutions: [0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/], //设置分辨率
+                    resolutions: m_Resulation,
+                    //[0.703125, 0.3515625, 0.17578125, 0.087890625, 0.0439453125, 0.0219726562, 0.010986328125, 0.0054931640625, 0.00274658203125  /*, 0.00244140625*/], //设置分辨率
                     /*extent: [-180, -90, 180, 90],*/
                     tileSize: [256, 256]
                 }),
@@ -499,13 +437,45 @@
                         // to the correct sign
                         x = x + n;
                     }
+                    tileAllNum++;
                     return urlTemplate.replace('{z}', z.toString())
                             .replace('{y}', y.toString())
                             .replace('{x}', x.toString());
                 }
             })
         });
+
+        layer.getSource().on('tileloadstart', function () {
+            // window.tileLoadStart++;
+        });
+        layer.getSource().on('tileloadend', function () {
+            tileLoadEnd++;
+        });
+        layer.getSource().on('tileloaderror', function () {
+            tileLoadError++;
+        });
         return layer
+    }
+
+
+    function GetTilezIndex(tileName) {
+        if (m_ShowLayer[tileName]) {
+            return m_ShowLayer[tileName].getZIndex();
+        }
+        return null;
+    }
+    function SetTilezIndex(tileName, zIndex) {
+        if (m_ShowLayer[tileName]) {
+            m_ShowLayer[tileName].setZIndex(zIndex);
+        }
+    }
+
+    //设置可见
+    function SetTileVisibility(tileName, is_visbi) {
+        if (m_ShowLayer[tileName]) {
+
+            m_ShowLayer[tileName].setVisible(is_visbi);
+        }
     }
 
     function Remove_Layer(nameFun) {
@@ -518,25 +488,48 @@
 </script>
 <script>
 
+    //上下时次部分
+    var m_test = 0;
+    function BeforeTime() {
+        m_test--;
+        if (m_test < 0) {
+            m_test = m_CloudList.length - m_test;
+        }
+        if (m_test % 15 == 0) {
+            AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+        }
+        AddKML(m_FlashList[m_test], m_test);
+    }
+
+    function NextTime() {
+
+        m_test++;
+        m_test = m_test % m_CloudList.length;
+        for (var m_AreadyLayer in m_ShowLayer) {
+            Remove_Layer(m_AreadyLayer);
+        }
+        console.log(m_FlashList[m_test], m_CloudList[m_test]);
+        if (m_test % 15 == 0) {
+            AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+        }
+        AddKML(m_FlashList[m_test], m_test);
+    }
+
     /*    按钮部分*/
     function AddLayerTest() {
         //AddKML('fr/data/1min/201707070850.kml', 0);
         // http://123.56.135.196:6001/api/test/flash/fr/lmi.kml
-        AddKML('fr/flash/15min/flash_1.kml', 0);
-        //AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6_7_8_9_10', 0);
+        // AddKML('fr/flash/15min/flash_1.kml', 0);
+        // AddKML(' http://123.56.135.196:6001/api/test/flash/fr/1', 0);
+        AddKML(m_FlashList[m_test], m_test)
     }
-    function RemoveTest() {
-        Remove_Layer(0);
-    }
+
 
     function AddTileTest() {
-        AddTile(m_CloudList[0], 'Clould_11');
-        // m_ShowLayer["vector"].setZIndex(3000);
+        AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+
     }
 
-    function RemoveTileTest() {
-        Remove_Layer('Clould_11');
-    }
 
 </script>
 <script>
@@ -545,6 +538,7 @@
 
     InitMap();
     InitDataList1();
+    NextTime();
 
 </script>
 
