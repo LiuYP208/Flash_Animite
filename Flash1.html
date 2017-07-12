@@ -2,17 +2,23 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>闪电_15min</title>
+    <title>闪电_动画</title>
     <link rel="stylesheet" href="./lib/openlayer/ol.css" type="text/css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="./lib/openlayer/ol.js"></script>
+    <script src="./lib/moment.min.js"></script>
     <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <style>
         body {
             background-color: #060133;
+            background-color: #060133;
+        }
+
+        label {
+            color: #ffce27;
         }
 
         #testColor {
@@ -63,11 +69,149 @@
     <button onclick="BeforeTime()">上一个</button>
     <button onclick="NextTime()">下一个</button>
 
-    <button onclick="BeginAnimite()">开始15min 模式</button>
+    <button onclick="BeginAnimite()">开始</button>
     <button onclick="StopAnimite()">暂停</button>
     <button onclick="SetAnimite()">复位</button>
-
+    <label style="width: 10px;"></label>
+    <input id="TimeSpan" value="100">
+    <button onclick="SetTimeSpan()">设置速度</button>
 </div>
+<div>
+    <button onclick="InitDataList_FR()">FR 模式</button>
+    <button onclick="InitDataList_DN()">DN 模式</button>
+
+    <button onclick="InitTimeSpan(15)">1分钟模式</button>
+    <button onclick="InitTimeSpan(1)">15分钟模式</button>
+    <label>当前模式：</label>
+    <label id="TimeMode">15分钟 </label>
+    <label>/ </label>
+    <label id="FlashMode">FR </label>
+</div>
+
+<script>
+
+    var m_TimeSpan = 1;
+    var m_FlashType = 'FR';
+    var m_TileCh = '4000';
+
+    function InitTimeSpan(m_timespan) {
+
+        m_TimeSpan = m_timespan;
+        if (m_TimeSpan == 15) {
+            document.getElementById("TimeMode").innerText = 1 + "分钟";
+        } else {
+            document.getElementById("TimeMode").innerText = 15 + "分钟";
+        }
+        if (m_FlashType == 'FR') {
+            InitDataList_FR();
+        }
+        else {
+            InitDataList_DN();
+        }
+    }
+
+    var m_FlashList = [];
+    var m_CloudList = [];
+
+    /*动画模式*/
+
+    //FR模式
+    function InitDataList_FR() {
+        console.log('InitDataList_FR');
+        m_FlashType = 'FR';
+        var m_DNPATH = 'fr/flash/fr/';
+        document.getElementById("FlashMode").innerText = 'FR';
+        //设置1min的亮度
+        m_FlashList = [];
+        m_CloudList = [];
+        var BaseMoment = moment('2017-07-07 08:45:00');
+        if (m_TimeSpan == 15) {
+            BaseMoment = moment('2017-07-07 08:59:00');
+        }
+        else {
+            BaseMoment = moment('2017-07-07 08:45:00');
+        }
+        for (var i1 = 0; i1 < 15 * m_TimeSpan; i1++) {
+            if (m_TimeSpan == 15) {
+                //1min一个
+                var m_TimeADD = BaseMoment.add(1, 'minutes');
+                var TimeStr = m_TimeADD.format("YYYYMMDDHHmm");
+                /// console.log(TimeStr);
+                var m_FileName = m_DNPATH + '1min/' + '' + TimeStr + '.kml';
+                m_FlashList.push(m_FileName);
+                if (i1 % 15 == 0) {
+                    var m_CloudStr = m_TimeADD.format("YYYYMMDD_HHmm");
+                    var m_CloudStrFile = 'mips/' + m_TileCh + '/' + m_CloudStr + "/";
+                    m_CloudList.push(m_CloudStrFile);
+                }
+
+            }
+            else {
+                //15min一个
+                var m_TimeADD1 = BaseMoment.add(15, 'minutes');
+                var TimeStr1 = m_TimeADD1.format("YYYYMMDDHHmm");
+                ///  console.log(TimeStr);
+                var m_FileName1 = m_DNPATH + '15min/' + '' + TimeStr1 + '.kml';
+                m_FlashList.push(m_FileName1);
+
+                var m_CloudStr1 = m_TimeADD1.format("YYYYMMDD_HHmm");
+                var m_CloudStrFile1 = 'mips/4000/' + m_CloudStr1 + "/";
+                m_CloudList.push(m_CloudStrFile1);
+            }
+        }
+        console.log(m_FlashList);
+        console.log(m_CloudList);
+    }
+
+    //DN模式
+    function InitDataList_DN() {
+        console.log('InitDataList_DN');
+        var m_DNPATH = 'fr/flash/dn/';
+        m_FlashType = 'DN';
+        document.getElementById("FlashMode").innerText = 'DN';
+        m_FlashList = [];
+        m_CloudList = [];
+        var BaseMoment = moment('2017-07-09 09:45:00');
+        if (m_TimeSpan == 15) {
+            BaseMoment = moment('2017-07-09 09:59:00');
+        }
+        else {
+            BaseMoment = moment('2017-07-09 09:45:00');
+        }
+        for (var i1 = 0; i1 < 15 * m_TimeSpan; i1++) {
+            if (m_TimeSpan == 15) {
+                //1min一个
+                var m_TimeADD = BaseMoment.add(1, 'minutes');
+                var TimeStr = m_TimeADD.format("YYYYMMDDHHmmss");
+                /// console.log(TimeStr);
+                var m_FileName = m_DNPATH + '1min/' + 's' + TimeStr + '.kml';
+                m_FlashList.push(m_FileName);
+                if (i1 % 15 == 0) {
+                    var m_CloudStr = m_TimeADD.format("YYYYMMDD_HHmm");
+                    var m_CloudStrFile = 'mips/4000/' + m_CloudStr + "/";
+                    m_CloudList.push(m_CloudStrFile);
+                }
+            }
+            else {
+                //15min一个
+                var m_TimeADD1 = BaseMoment.add(15, 'minutes');
+                var TimeStr1 = m_TimeADD1.format("YYYYMMDDHHmmss");
+                ///  console.log(TimeStr);
+                var m_FileName1 = m_DNPATH + '15min/' + 'g' + TimeStr1 + '.kml';
+                m_FlashList.push(m_FileName1);
+                var m_CloudStr1 = m_TimeADD1.format("YYYYMMDD_HHmm");
+                var m_CloudStrFile1 = 'mips/' + m_TileCh + '/' + m_CloudStr1 + "/";
+                m_CloudList.push(m_CloudStrFile1);
+            }
+
+        }
+        console.log(m_FlashList);
+        console.log(m_CloudList);
+    }
+
+
+</script>
+
 <script>
 
 
@@ -79,25 +223,22 @@
         styleCache[m_Resulation[i]] = {};
     }
 
-    //闪电列表
-    var m_FlashList = [];
 
-
-    //云图列表
-    var m_CloudList = [
-        "fr/mips/20170707_0900/",
-        "fr/mips/20170707_0915/",
-        "fr/mips/20170707_0930/",
-        'fr/mips/20170707_0945/',
-        'fr/mips/20170707_1015/',
-        'fr/mips/20170707_1030/',
-        'fr/mips/20170707_1045/'
-    ];
     var map;
     var anime_timer;
 
-    var ANIMATETIMESPAM = 20;
+    var ANIMATETIMESPAM = 500;
 
+
+    function SetTimeSpan() {
+        var m_Time = document.getElementById("TimeSpan");
+        // console.log(m_Time.value);
+        var m_TimeSpan = Number(m_Time.value);
+        if (m_TimeSpan > 10) {
+            ANIMATETIMESPAM = m_TimeSpan;
+            alert('设置速度:' + ANIMATETIMESPAM + 'ms')
+        }
+    }
     //当前移动
     var REMOVE_NUM = -1;
     //当前显示
@@ -106,7 +247,7 @@
     var ADD_NUM = 1;
     //图层最大值
 
-    var LAYER_MAX = 15;
+
     //当前显示 Layer
     var m_ShowLayer = {};
 
@@ -116,7 +257,6 @@
     // var info = $('#info');
     //初始化 地图显示
     function InitMap() {
-
 
         var style = new ol.style.Style({
             stroke: new ol.style.Stroke({
@@ -159,72 +299,11 @@
         view.on('change:resolution', function (e) {
             clearAnimate();
         });
+
+        AddTile(m_CloudList[0], 'Clould' + 0);
+        AddKML(m_FlashList[0], 0);
     }
 
-    function InitDataList_1min() {
-        console.log("InitDataList_1min");
-        var m_BEGIN = 201707070850;
-
-        for (var i = 0; i < 15; i++) {
-
-
-            var m_kmlStr = 'fr/data/' + (m_BEGIN + i) + '.kml';
-
-
-            //console.log(m_kmlStr);
-            m_FlashList.push(m_kmlStr);
-            // m_kmlStr += i + '_';
-        }
-        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
-
-        LAYER_MAX = m_FlashList.length;
-        console.log(m_FlashList);
-    }
-    //初始化数据列表
-    function InitDataList() {
-        console.log("InitDataList");
-
-        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/1_2_3_4_5_6';
-        for (var i = 0; i < 15; i++) {
-
-            var m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
-            for (var t = 0; t < 15; t++) {
-                /// console.log('ttttt');
-                if (t < 14) {
-                    var w = 15 * i + 11 + t;
-                    ///   console.log(w);
-                    m_kmlStr = m_kmlStr + w + "_";
-                } else {
-                    var w1 = 15 * i + 11 + t;
-                    m_kmlStr = m_kmlStr + w1;
-                }
-
-            }
-            console.log(m_kmlStr);
-            m_FlashList.push(m_kmlStr);
-            // m_kmlStr += i + '_';
-        }
-        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
-
-        LAYER_MAX = m_FlashList.length;
-        console.log(m_FlashList);
-    }
-
-
-    function InitDataList1() {
-        console.log("InitDataList");
-        var m_Time = 201707070850;
-        for (var i = 1; i < 15; i++) {
-            m_kmlStr = 'fr/flash/1min/' + m_Time + i + '.kml';
-            console.log(m_kmlStr);
-            m_FlashList.push(m_kmlStr);
-            // m_kmlStr += i + '_';
-        }
-        // m_kmlStr = 'http://123.56.135.196:6001/api/test/flash/fr/';
-
-        LAYER_MAX = m_FlashList.length;
-        console.log(m_FlashList);
-    }
 
     var resatFlag = true;
 
@@ -235,43 +314,68 @@
         }
         resatFlag = true;
 
-        AddTile(m_CloudList[0], "Cloud_" + 0);
+        AddTile(m_CloudList[0], "Cloud" + 0);
         //AddKML(m_FlashList[SHOW_NUM], SHOW_NUM);
         //SHOW_NUM++;
-        anime_timer = setInterval(function () {
-            if (oGetStatus()) {
 
-                //判断添加值域
-                var BaseTileNum = GetTilezIndex("Cloud" + SHOW_NUM);
-                // console.log();
-                //添加下一层的
-                if (ADD_NUM % 15 == 0) {
-                    AddTile(m_CloudList[ADD_NUM], "Cloud" + ADD_NUM);
-                    SetTilezIndex("Cloud" + ADD_NUM, BaseTileNum + 1);
-                }
-                AddKML(m_FlashList[ADD_NUM], ADD_NUM);
-                SetTilezIndex(ADD_NUM, BaseTileNum + 2);
-                ADD_NUM++;
-                ADD_NUM = ADD_NUM % m_FlashList.length;
+        var BaseTileNum = GetTilezIndex("Cloud" + 0);
+        var m_EndStop = 0;
+        anime_timer = setInterval(
+                function () {
+                    if (m_EndStop == 0) {
+                        if (oGetStatus()) {
 
-                SHOW_NUM++;
-                SHOW_NUM = SHOW_NUM % m_FlashList.length;
+                            if (ADD_NUM % m_TimeSpan == 0) {
+                                AddTile(m_CloudList[ADD_NUM / m_TimeSpan], "Cloud" + ADD_NUM);
 
-                //判断移除值域
-                if (REMOVE_NUM != -1) {
-                    // 隐藏tile上一云图
-                    if (ADD_NUM % 15 == 0) {
-                        Remove_Layer("Cloud" + REMOVE_NUM);
+                                if (ADD_NUM == 0) {
+                                    BaseTileNum = GetTilezIndex("Cloud" + ( ADD_NUM - m_TimeSpan + m_FlashList.length));
+                                }
+                                else {
+                                    BaseTileNum = GetTilezIndex("Cloud" + (ADD_NUM - m_TimeSpan));
+                                }
+                                SetTilezIndex("Cloud" + ADD_NUM, BaseTileNum + 1);
+                            }
+                            AddKML(m_FlashList[ADD_NUM], ADD_NUM);
+                            SetTilezIndex(ADD_NUM, BaseTileNum + 2);
+                            ADD_NUM++;
+                            ADD_NUM = ADD_NUM % m_FlashList.length;
+
+                            SHOW_NUM++;
+                            if (SHOW_NUM == m_FlashList.length) {
+                                m_EndStop = 50;
+                            }
+                            SHOW_NUM = SHOW_NUM % m_FlashList.length;
+
+                            //判断移除值域
+                            if (REMOVE_NUM != -1) {
+                                // 隐藏tile上一云图
+                                if (REMOVE_NUM % m_TimeSpan == 0) {
+                                    if (REMOVE_NUM == 0) {
+                                        Remove_Layer("Cloud" + (m_FlashList.length - m_TimeSpan ));
+                                    } else {
+                                        Remove_Layer("Cloud" + (REMOVE_NUM - m_TimeSpan ));
+                                    }
+
+                                }
+                                //移除kml
+                                if (REMOVE_NUM >= 2) {
+                                    Remove_Layer(REMOVE_NUM - 2);
+                                }
+                                else {
+                                    Remove_Layer(m_FlashList.length - REMOVE_NUM);
+                                }
+                            }
+                            REMOVE_NUM++;
+                            REMOVE_NUM = REMOVE_NUM % m_FlashList.length;
+                        }
                     }
-                    //移除kml
-                    Remove_Layer(REMOVE_NUM);
-                }
-                REMOVE_NUM++;
-                REMOVE_NUM = REMOVE_NUM % m_FlashList.length;
-            } else {
-
-            }
-        }, ANIMATETIMESPAM);
+                    else {
+                        m_EndStop--;
+                    }
+                },
+                ANIMATETIMESPAM
+        );
     }
 
 
@@ -327,13 +431,14 @@
         //  layer.setVisible(false);
         return layer;
     }
+
     var styleFunction = function (feature, resolution) {
         var style;
         var BaseResolution = 0.0219726562;
         var m_sacle = 1;
         m_sacle = BaseResolution / resolution;
         if (resolution == m_Resulation[7] || resolution == m_Resulation[8]) {
-            m_sacle = m_sacle * 0.6;
+            m_sacle = m_sacle * 0.7;
         }
         var name = feature.get('name');
         var magnitude = parseFloat(name);
@@ -360,8 +465,9 @@
         var m_size = 16;
         var m_Src = 'icon/flash_16.png';
         if (m_sacle < 1) {
-            m_Src = 'icon/flash_16.png';
-            m_size = 16;
+            m_Src = 'icon/flash_32.png';
+            m_size = 32;
+            m_sacle = m_sacle * 2;
         }
         else {
             m_sacle = m_sacle / 2;
@@ -406,7 +512,6 @@
             tileAllNum = 0;
             return true;
         } else {
-
             return false;
         }
     }
@@ -486,31 +591,63 @@
         }
     }
 </script>
-<script>
 
+<script>
     //上下时次部分
     var m_test = 0;
+
     function BeforeTime() {
-        m_test--;
-        if (m_test < 0) {
-            m_test = m_CloudList.length - m_test;
+        var m_Time = 15;
+        if (m_TimeSpan == 1) {
+            m_Time = 15;
+        } else {
+            m_Time = 1;
         }
-        if (m_test % 15 == 0) {
-            AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+
+        m_test--;
+
+        if (m_test < 0) {
+            m_test = m_FlashList.length - m_test;
+        }
+        for (var m_AreadyLayer in m_ShowLayer) {
+            if (m_AreadyLayer.indexOf("Clould") > -1) {
+                if (m_test % m_Time == 0) {
+                    Remove_Layer(m_AreadyLayer);
+                }
+            }
+            else {
+                Remove_Layer(m_AreadyLayer);
+            }
+        }
+        if (m_test % m_TimeSpan == 0) {
+            AddTile(m_CloudList[m_test / m_TimeSpan], 'Clould' + m_test);
         }
         AddKML(m_FlashList[m_test], m_test);
     }
 
     function NextTime() {
 
+        var m_Time = 15;
+        if (m_TimeSpan == 1) {
+            m_Time = 15;
+        } else {
+            m_Time = 1;
+        }
         m_test++;
-        m_test = m_test % m_CloudList.length;
+        m_test = m_test % m_FlashList.length;
         for (var m_AreadyLayer in m_ShowLayer) {
-            Remove_Layer(m_AreadyLayer);
+            if (m_AreadyLayer.indexOf("Clould") > -1) {
+                if (m_test % m_TimeSpan == 0) {
+                    Remove_Layer(m_AreadyLayer);
+                }
+            }
+            else {
+                Remove_Layer(m_AreadyLayer);
+            }
         }
         console.log(m_FlashList[m_test], m_CloudList[m_test]);
-        if (m_test % 15 == 0) {
-            AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+        if (m_test % m_TimeSpan == 0) {
+            AddTile(m_CloudList[m_test / m_TimeSpan], 'Clould' + m_test);
         }
         AddKML(m_FlashList[m_test], m_test);
     }
@@ -526,19 +663,19 @@
 
 
     function AddTileTest() {
-        AddTile(m_CloudList[m_test], 'Clould_' + m_test);
+        AddTile(m_CloudList[m_test], 'Clould' + m_test);
 
     }
 
 
 </script>
+
 <script>
 
     /*初始化部分*/
-
+    InitDataList_FR();
     InitMap();
-    InitDataList1();
-    NextTime();
+
 
 </script>
 

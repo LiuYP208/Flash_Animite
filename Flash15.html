@@ -68,6 +68,109 @@
     <button onclick="SetAnimite()">复位</button>
 
 </div>
+<div>
+    <button onclick="InitDataList_FR()">FR 模式</button>
+    <button onclick="InitDataList_DN()">DN 模式</button>
+    <span>   </span>
+    <button onclick="InitTimeSpan(1)">1分钟模式</button>
+    <button onclick="InitTimeSpan(15)">15分钟模式</button>
+</div>
+
+<script>
+
+    var m_TimeSpan = 15;
+    var m_FlashType = 'FR';
+
+    function InitTimeSpan(m_timespan) {
+        m_TimeSpan = m_timespan;
+        if (m_FlashType == 'FR') {
+            InitDataList_FR();
+        }
+        else {
+            InitDataList_DN();
+        }
+    }
+
+    var m_FlashList = [];
+    var m_CloudList = [];
+
+
+    /*动画模式*/
+    function InitDataList_FR() {
+        console.log('InitDataList_FR');
+        //设置1min的亮度
+        m_FlashList = [];
+        for (var i1 = 11; i < 15 * m_TimeSpan + 11; i++) {
+            var m_KMLStr = '' + i + '.kml';
+            // m_FlashList.push(m_KMLStr);
+        }
+
+        var m_Time = 201707070850;
+        for (var i = 1; i < 15; i++) {
+            var m_TimeStr = m_Time + i;
+            m_kmlStr = 'fr/flash/fr/1min/' + m_TimeStr + '.kml';
+            console.log(m_kmlStr);
+            m_FlashList.push(m_kmlStr);
+            // m_kmlStr += i + '_';
+        }
+        //设置云图列表
+        m_CloudList = [
+            "mips/4000/20170707_0900/",
+            "mips/4000/20170707_0915/",
+            "mips/4000/20170707_0930/",
+            'mips/4000/20170707_0945/',
+            'mips/4000/20170707_1000/',
+            'mips/4000/20170707_1015/',
+            'mips/4000/20170707_1030/',
+            'mips/4000/20170707_1045/',
+            'mips/4000/20170707_1100/',
+            'mips/4000/20170707_1115/',
+            'mips/4000/20170707_1130/',
+            'mips/4000/20170707_1145/',
+            'mips/4000/20170707_1200/',
+            'mips/4000/20170707_1215/',
+            'mips/4000/20170707_1230/'
+        ];
+    }
+
+    function InitDataList_DN() {
+        console.log('InitDataList_DN');
+        m_FlashList = [];
+        for (var i1 = 11; i < 15 * m_TimeSpan + 11; i++) {
+            var m_KMLStr = '' + i + '.kml';
+            m_FlashList.push(m_KMLStr);
+        }
+        m_CloudList = [
+            "mips/4000/20170709_1045/",
+            "mips/4000/20170709_1100/",
+            "mips/4000/20170709_1115/",
+            'mips/4000/20170709_1130/',
+            'mips/4000/20170709_1145/',
+            'mips/4000/20170709_1200/',
+            'mips/4000/20170709_1200/',
+            'mips/4000/20170709_1215/',
+            'mips/4000/20170709_1230/',
+            'mips/4000/20170709_1245/',
+            'mips/4000/20170709_1300/',
+            'mips/4000/20170709_1315/',
+            'mips/4000/20170709_1330/',
+            'mips/4000/20170709_1345/',
+            'mips/4000/20170709_1400/',
+            'mips/4000/20170709_1415/',
+            'mips/4000/20170709_1430/',
+            'mips/4000/20170709_1445/',
+            'mips/4000/20170709_1500/',
+            'mips/4000/20170709_1515/',
+            'mips/4000/20170709_1530/',
+            'mips/4000/20170709_1545/',
+            'mips/4000/20170709_1600/',
+            'mips/4000/20170709_1615/',
+            'mips/4000/20170709_1630/',
+            'mips/4000/20170709_1645/'
+        ];
+    }
+
+</script>
 <script>
 
 
@@ -79,24 +182,10 @@
         styleCache[m_Resulation[i]] = {};
     }
 
-    //闪电列表
-    var m_FlashList = [];
-
-
-    //云图列表
-    var m_CloudList = [
-        "fr/mips/20170707_0900/",
-        "fr/mips/20170707_0915/",
-        "fr/mips/20170707_0930/",
-        'fr/mips/20170707_0945/',
-        'fr/mips/20170707_1015/',
-        'fr/mips/20170707_1030/',
-        'fr/mips/20170707_1045/'
-    ];
     var map;
     var anime_timer;
 
-    var ANIMATETIMESPAM = 20;
+    var ANIMATETIMESPAM = 100;
 
     //当前移动
     var REMOVE_NUM = -1;
@@ -105,7 +194,6 @@
     //当前添加
     var ADD_NUM = 1;
     //图层最大值
-
     var LAYER_MAX = 15;
     //当前显示 Layer
     var m_ShowLayer = {};
@@ -216,7 +304,7 @@
 
     function InitDataList1() {
         console.log("InitDataList");
-        for (var i = 1; i < 8; i++) {
+        for (var i = 1; i < 15; i++) {
 
             m_kmlStr = 'fr/flash/15min/flash_' + i + '.kml';
             console.log(m_kmlStr);
@@ -285,12 +373,6 @@
         for (var m_AreadyLayer in m_ShowLayer) {
             Remove_Layer(m_AreadyLayer);
         }
-        /*       for (var m_TileNum = m_CloudList.length - 1; m_TileNum > 0; m_TileNum--) {
-         //var m_Tile = m_CloudList[m_TileNum];
-         AddTile(m_CloudList[m_TileNum], "Cloud" + m_TileNum);
-         SetTileVisibility("Cloud" + m_TileNum, false);
-         }*/
-
 
         REMOVE_NUM = -1;
         //当前显示
@@ -492,15 +574,20 @@
     function BeforeTime() {
         m_test--;
         if (m_test < 0) {
-            m_test = m_CloudList.length - m_test;
+            m_test = m_FlashList.length - m_test;
+        }
+        for (var m_AreadyLayer in m_ShowLayer) {
+            Remove_Layer(m_AreadyLayer);
         }
         AddTile(m_CloudList[m_test], 'Clould_' + m_test);
         AddKML(m_FlashList[m_test], m_test);
     }
+
+
     function NextTime() {
 
         m_test++;
-        m_test = m_test % m_CloudList.length;
+        m_test = m_test % m_FlashList.length;
         for (var m_AreadyLayer in m_ShowLayer) {
             Remove_Layer(m_AreadyLayer);
         }
